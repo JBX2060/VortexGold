@@ -1,0 +1,92 @@
+#!/sbin/openrc-run
+
+# backward compatibility for existing gentoo layout 
+#
+if [ -d "/var/lib/testcoinsuper/.testcoinsuper" ]; then
+	TESTCOINSUPERD_DEFAULT_DATADIR="/var/lib/testcoinsuper/.testcoinsuper"
+else
+	TESTCOINSUPERD_DEFAULT_DATADIR="/var/lib/testcoinsuperd"
+fi
+
+TESTCOINSUPERD_CONFIGFILE=${TESTCOINSUPERD_CONFIGFILE:-/etc/testcoinsuper/testcoinsuper.conf}
+TESTCOINSUPERD_PIDDIR=${TESTCOINSUPERD_PIDDIR:-/var/run/testcoinsuperd}
+TESTCOINSUPERD_PIDFILE=${TESTCOINSUPERD_PIDFILE:-${TESTCOINSUPERD_PIDDIR}/testcoinsuperd.pid}
+TESTCOINSUPERD_DATADIR=${TESTCOINSUPERD_DATADIR:-${TESTCOINSUPERD_DEFAULT_DATADIR}}
+TESTCOINSUPERD_USER=${TESTCOINSUPERD_USER:-${TESTCOINSUPER_USER:-testcoinsuper}}
+TESTCOINSUPERD_GROUP=${TESTCOINSUPERD_GROUP:-testcoinsuper}
+TESTCOINSUPERD_BIN=${TESTCOINSUPERD_BIN:-/usr/bin/testcoinsuperd}
+TESTCOINSUPERD_NICE=${TESTCOINSUPERD_NICE:-${NICELEVEL:-0}}
+TESTCOINSUPERD_OPTS="${TESTCOINSUPERD_OPTS:-${TESTCOINSUPER_OPTS}}"
+
+name="Test Coin Super Core Daemon"
+description="Test Coin Super cryptocurrency P2P network daemon"
+
+command="/usr/bin/testcoinsuperd"
+command_args="-pid=\"${TESTCOINSUPERD_PIDFILE}\" \
+		-conf=\"${TESTCOINSUPERD_CONFIGFILE}\" \
+		-datadir=\"${TESTCOINSUPERD_DATADIR}\" \
+		-daemon \
+		${TESTCOINSUPERD_OPTS}"
+
+required_files="${TESTCOINSUPERD_CONFIGFILE}"
+start_stop_daemon_args="-u ${TESTCOINSUPERD_USER} \
+			-N ${TESTCOINSUPERD_NICE} -w 2000"
+pidfile="${TESTCOINSUPERD_PIDFILE}"
+
+# The retry schedule to use when stopping the daemon. Could be either
+# a timeout in seconds or multiple signal/timeout pairs (like
+# "SIGKILL/180 SIGTERM/300")
+retry="${TESTCOINSUPERD_SIGTERM_TIMEOUT}"
+
+depend() {
+	need localmount net
+}
+
+# verify
+# 1) that the datadir exists and is writable (or create it)
+# 2) that a directory for the pid exists and is writable
+# 3) ownership and permissions on the config file
+start_pre() {
+	checkpath \
+	-d \
+	--mode 0750 \
+	--owner "${TESTCOINSUPERD_USER}:${TESTCOINSUPERD_GROUP}" \
+	"${TESTCOINSUPERD_DATADIR}"
+
+	checkpath \
+	-d \
+	--mode 0755 \
+	--owner "${TESTCOINSUPERD_USER}:${TESTCOINSUPERD_GROUP}" \
+	"${TESTCOINSUPERD_PIDDIR}"
+
+	checkpath -f \
+	-o ${TESTCOINSUPERD_USER}:${TESTCOINSUPERD_GROUP} \
+	-m 0660 \
+	${TESTCOINSUPERD_CONFIGFILE}
+
+	checkconfig || return 1
+}
+
+checkconfig()
+{
+	if ! grep -qs '^rpcpassword=' "${TESTCOINSUPERD_CONFIGFILE}" ; then
+		eerror ""
+		eerror "ERROR: You must set a secure rpcpassword to run testcoinsuperd."
+		eerror "The setting must appear in ${TESTCOINSUPERD_CONFIGFILE}"
+		eerror ""
+		eerror "This password is security critical to securing wallets "
+		eerror "and must not be the same as the rpcuser setting."
+		eerror "You can generate a suitable random password using the following "
+		eerror "command from the shell:"
+		eerror ""
+		eerror "bash -c 'tr -dc a-zA-Z0-9 < /dev/urandom | head -c32 && echo'"
+		eerror ""
+		eerror "It is recommended that you also set alertnotify so you are "
+		eerror "notified of problems:"
+		eerror ""
+		eerror "ie: alertnotify=echo %%s | mail -s \"Test Coin Super Alert\"" \
+			"admin@foo.com"
+		eerror ""
+		return 1
+	fi
+}

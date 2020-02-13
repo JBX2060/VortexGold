@@ -1,0 +1,33 @@
+# /etc/conf.d/testcoinsuperd: config file for /etc/init.d/testcoinsuperd
+
+# Config file location
+#TESTCOINSUPERD_CONFIGFILE="/etc/testcoinsuper/testcoinsuper.conf"
+
+# What directory to write pidfile to?  (created and owned by $TESTCOINSUPERD_USER)
+#TESTCOINSUPERD_PIDDIR="/var/run/testcoinsuperd"
+
+# What filename to give the pidfile
+#TESTCOINSUPERD_PIDFILE="${TESTCOINSUPERD_PIDDIR}/testcoinsuperd.pid"
+
+# Where to write testcoinsuperd data (be mindful that the blockchain is large)
+#TESTCOINSUPERD_DATADIR="/var/lib/testcoinsuperd"
+
+# User and group to own testcoinsuperd process
+#TESTCOINSUPERD_USER="testcoinsuper"
+#TESTCOINSUPERD_GROUP="testcoinsuper"
+
+# Path to testcoinsuperd executable
+#TESTCOINSUPERD_BIN="/usr/bin/testcoinsuperd"
+
+# Nice value to run testcoinsuperd under
+#TESTCOINSUPERD_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+#TESTCOINSUPERD_OPTS=""
+
+# The timeout in seconds OpenRC will wait for testcoinsuperd to terminate
+# after a SIGTERM has been raised.
+# Note that this will be mapped as argument to start-stop-daemon's
+# '--retry' option, which means you can specify a retry schedule
+# here. For more information see man 8 start-stop-daemon.
+TESTCOINSUPERD_SIGTERM_TIMEOUT=60
